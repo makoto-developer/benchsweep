@@ -1,0 +1,82 @@
+# Go のバージョンを横断してベンチを回すための隔離環境。
+#
+# 各サービスは同じ制約（CPU数・cpuset・メモリ・GOMAXPROCS）で走る。
+# run.sh が1つずつ順番に起動する（同時に走らせると測定が混ざるため）。
+#
+# GOMAXPROCS を明示しているのは、Go 1.25 からランタイムが cgroup の CPU 制限を
+# 見て GOMAXPROCS を決めるようになったため。固定しないとバージョン差と並列度差が混ざる。
+
+x-bench: &bench
+  working_dir: /src
+  volumes:
+    - ${BENCH_TARGET:?BENCH_TARGET を絶対パスで指定してください}:/src:ro
+    - ./results:/out
+    - gocache:/gocache
+  environment:
+    GOMAXPROCS: ${BENCH_GOMAXPROCS:-4}
+    BENCH_CPUSET: ${BENCH_CPUSET:-0-3}
+    GOCACHE: /gocache/build
+    GOMODCACHE: /gocache/mod
+    GOTMPDIR: /tmp
+    GOFLAGS: -mod=mod
+  # 依存モジュールの取得を伴わない前提。必要なら BENCH_NETWORK=bridge にする。
+  network_mode: ${BENCH_NETWORK:-none}
+  cpus: ${BENCH_CPUS:-4}
+  cpuset: ${BENCH_CPUSET:-0-3}
+  mem_limit: ${BENCH_MEM:-4g}
+  # ベンチ中に他のプロセスと競合しないよう、シェルは最小限しか動かさない。
+  entrypoint: ["/bin/sh", "-c"]
+
+services:
+  # 依存モジュールを共有キャッシュへ先に落とす段。ここだけネットワークを開ける。
+  # 計測する側は network_mode: none のまま走らせたいので、取得を分離している。
+  warm:
+    <<: *bench
+    image: golang:1.25
+    network_mode: bridge
+    # entrypoint が sh -c なので、シェルに渡す1語として引用符ごと書く必要がある。
+    command: >-
+      'go mod download all 2>&1 | tail -3'
+
+  go1.23:
+    <<: *bench
+    image: golang:1.23
+    command: >-
+      'go version > /out/go1.23.txt 2>&1;
+       echo "GOMAXPROCS=$$GOMAXPROCS cpuset=$$BENCH_CPUSET" >> /out/go1.23.txt 2>&1;
+       go test -bench=${BENCH_REGEX:-.} -benchmem -run="^$$" -count=${BENCH_COUNT:-3} ./... >> /out/go1.23.txt 2>&1'
+
+  go1.24:
+    <<: *bench
+    image: golang:1.24
+    command: >-
+      'go version > /out/go1.24.txt 2>&1;
+       echo "GOMAXPROCS=$$GOMAXPROCS cpuset=$$BENCH_CPUSET" >> /out/go1.24.txt 2>&1;
+       go test -bench=${BENCH_REGEX:-.} -benchmem -run="^$$" -count=${BENCH_COUNT:-3} ./... >> /out/go1.24.txt 2>&1'
+
+  go1.25:
+    <<: *bench
+    image: golang:1.25
+    command: >-
+      'go version > /out/go1.25.txt 2>&1;
+       echo "GOMAXPROCS=$$GOMAXPROCS cpuset=$$BENCH_CPUSET" >> /out/go1.25.txt 2>&1;
+       go test -bench=${BENCH_REGEX:-.} -benchmem -run="^$$" -count=${BENCH_COUNT:-3} ./... >> /out/go1.25.txt 2>&1'
+
+  go1.26:
+    <<: *bench
+    image: golang:1.26
+    command: >-
+      'go version > /out/go1.26.txt 2>&1;
+       echo "GOMAXPROCS=$$GOMAXPROCS cpuset=$$BENCH_CPUSET" >> /out/go1.26.txt 2>&1;
+       go test -bench=${BENCH_REGEX:-.} -benchmem -run="^$$" -count=${BENCH_COUNT:-3} ./... >> /out/go1.26.txt 2>&1'
+
+  golatest:
+    <<: *bench
+    image: golang:latest
+    command: >-
+      'go version > /out/golatest.txt 2>&1;
+       echo "GOMAXPROCS=$$GOMAXPROCS cpuset=$$BENCH_CPUSET" >> /out/golatest.txt 2>&1;
+       go test -bench=${BENCH_REGEX:-.} -benchmem -run="^$$" -count=${BENCH_COUNT:-3} ./... >> /out/golatest.txt 2>&1'
+
+volumes:
+  gocache:
