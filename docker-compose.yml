@@ -44,7 +44,7 @@ services:
     command: >-
       'go version > /out/go1.23.txt 2>&1;
        echo "GOMAXPROCS=$$GOMAXPROCS cpuset=$$BENCH_CPUSET" >> /out/go1.23.txt 2>&1;
-       go test -bench=${BENCH_REGEX:-.} -benchmem -run="^$$" -count=${BENCH_COUNT:-3} ./... >> /out/go1.23.txt 2>&1'
+       go test -bench="${BENCH_REGEX:-.}" -benchmem -run="^$$" -count=${BENCH_COUNT:-3} ./... >> /out/go1.23.txt 2>&1'
 
   go1.24:
     <<: *bench
@@ -52,7 +52,7 @@ services:
     command: >-
       'go version > /out/go1.24.txt 2>&1;
        echo "GOMAXPROCS=$$GOMAXPROCS cpuset=$$BENCH_CPUSET" >> /out/go1.24.txt 2>&1;
-       go test -bench=${BENCH_REGEX:-.} -benchmem -run="^$$" -count=${BENCH_COUNT:-3} ./... >> /out/go1.24.txt 2>&1'
+       go test -bench="${BENCH_REGEX:-.}" -benchmem -run="^$$" -count=${BENCH_COUNT:-3} ./... >> /out/go1.24.txt 2>&1'
 
   go1.25:
     <<: *bench
@@ -60,7 +60,7 @@ services:
     command: >-
       'go version > /out/go1.25.txt 2>&1;
        echo "GOMAXPROCS=$$GOMAXPROCS cpuset=$$BENCH_CPUSET" >> /out/go1.25.txt 2>&1;
-       go test -bench=${BENCH_REGEX:-.} -benchmem -run="^$$" -count=${BENCH_COUNT:-3} ./... >> /out/go1.25.txt 2>&1'
+       go test -bench="${BENCH_REGEX:-.}" -benchmem -run="^$$" -count=${BENCH_COUNT:-3} ./... >> /out/go1.25.txt 2>&1'
 
   go1.26:
     <<: *bench
@@ -68,7 +68,7 @@ services:
     command: >-
       'go version > /out/go1.26.txt 2>&1;
        echo "GOMAXPROCS=$$GOMAXPROCS cpuset=$$BENCH_CPUSET" >> /out/go1.26.txt 2>&1;
-       go test -bench=${BENCH_REGEX:-.} -benchmem -run="^$$" -count=${BENCH_COUNT:-3} ./... >> /out/go1.26.txt 2>&1'
+       go test -bench="${BENCH_REGEX:-.}" -benchmem -run="^$$" -count=${BENCH_COUNT:-3} ./... >> /out/go1.26.txt 2>&1'
 
   golatest:
     <<: *bench
@@ -76,7 +76,7 @@ services:
     command: >-
       'go version > /out/golatest.txt 2>&1;
        echo "GOMAXPROCS=$$GOMAXPROCS cpuset=$$BENCH_CPUSET" >> /out/golatest.txt 2>&1;
-       go test -bench=${BENCH_REGEX:-.} -benchmem -run="^$$" -count=${BENCH_COUNT:-3} ./... >> /out/golatest.txt 2>&1'
+       go test -bench="${BENCH_REGEX:-.}" -benchmem -run="^$$" -count=${BENCH_COUNT:-3} ./... >> /out/golatest.txt 2>&1'
 
 volumes:
   gocache:
