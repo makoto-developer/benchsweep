@@ -40,9 +40,11 @@ fi
 
 for svc in $SERVICES; do
   printf '▶ %s ... ' "$svc"
-  if ! docker compose run --rm --quiet-pull "$svc" >/dev/null 2>&1; then
-    # イメージが存在しない（未リリースのバージョン等）ケースは飛ばして続ける。
-    printf 'スキップ（イメージ取得または実行に失敗）\n'
+  # 失敗の中身を捨てない。イメージが無いのか、ベンチが落ちたのかで対処が違う。
+  if ! ERR=$(docker compose run --rm --quiet-pull "$svc" 2>&1); then
+    printf 'スキップ\n'
+    printf '%s\n' "$ERR" | tail -5 | sed 's/^/    /'
+    [ -s "results/${svc}.txt" ] && tail -5 "results/${svc}.txt" | sed 's/^/    /'
     rm -f "results/${svc}.txt"
     continue
   fi
